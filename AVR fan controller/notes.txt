@@ -1,0 +1,116 @@
+
+Path=c:\windows\system32;c:\windows;c:\windows\system32\wbem;c:\windows\system32\windowspowershell\v1.0\;c:\program files (x86)\cmake\bin;c:\windows\system32\config\systemprofile\.dnx\bin;c:\program files\microsoft dnx\dnvm\;c:\program files\microsoft sql server\130\tools\binn\;c:\program files (x86)\windows kits\10\windows performance toolkit\;C:\Program Files (x86)\NVIDIA Corporation\PhysX\Common;C:\WINDOWS\system32;C:\WINDOWS;C:\WINDOWS\System32\Wbem;C:\WINDOWS\System32\WindowsPowerShell\v1.0\;C:\Program Files (x86)\Nmap;C:\Users\ZigZagJoe\AppData\Local\Microsoft\WindowsApps;C:\Program Files (x86)\Arduino\hardware\tools\avr\bin;D:\Archives\MBP\zigzagjoe\Documents\rawAVR\tools
+
+"	cli						""\n"
+"	ldi %A0,0				""\n"
+"	ldi %B0,0				""\n"
+"	ldi %A1,0				""\n"
+"	ldi %B1,0				""\n"
+
+".H1:						""\n"
+"	adiw %A0,1				""\n"
+"	brvs .timeoutH			""\n"
+"	sbic %0, %1	 			""\n"
+"	rjmp .H1	 			""\n"
+
+".L1:						""\n"
+"	adiw %A1,1				""\n"
+"	brvs .timeoutL			""\n"
+"	sbis %0, %1 			""\n"
+"	rjmp .L1				""\n"
+
+"	ldi %A0,0				""\n"
+"	ldi %B0,0	 			""\n"
+"	ldi %A1,0				""\n"
+"	ldi %B1,0	 			""\n"
+
+".H2:						""\n"
+"	adiw %A0,1				""\n"
+"	brvs .timeoutH			""\n"
+"	sbic %0, %1	 			""\n"
+"	rjmp .H2	 			""\n"
+
+".L2:						""\n"
+"	adiw %A1,1				""\n"
+"	brvs .timeoutL			""\n"
+"	sbis %0, %1 			""\n"
+"	rjmp .L2				""\n"
+" 	rjmp .end				""\n"	
+	
+".timeoutH: 				""\n"
+"	ldi %A0,100				""\n"
+"	ldi %B0,0				""\n"
+"	ldi %A1,0				""\n"
+"	ldi %B1,0				""\n"
+" 	rjmp .end				""\n"
+	
+".timeoutL: 				""\n"
+"	ldi %A0,0				""\n"
+"	ldi %B0,0				""\n"
+"	ldi %A1,0				""\n"
+"	ldi %B1,0				""\n"
+
+".end:						""\n"
+"	sei						""\n"
+
+
+
+	cli				; disable interrupts, because this is timing sensitive
+	
+	ldi %A0,0		; load immediate to register. variable: up counter		
+	ldi %B0,0				
+	ldi %A1,0		; variable: down		
+	ldi %B1,0				
+
+	; sync with pwm signal
+	; must measure a complete cycle first for stable readout
+	
+.H1:				; count while high		
+	adiw %A0,1		; add word to register pair		
+	brvs .timeoutH	; if overflow, go to timeout case		
+	sbic 0x0F, 0	; skip following instruction when bit in io register is 0	
+					; 0x0F = PINF, Port F input register
+	rjmp .H1	 			
+
+.L1:				; count while low			
+	adiw %A1,1				
+	brvs .timeoutL			
+	sbis 0x0F, 0 	; skip following instruction when bit in io register is 1			
+	rjmp .L1				
+
+	; reset vars and measure for real
+	
+	ldi %A0,0				
+	ldi %B0,0	 			
+	ldi %A1,0				
+	ldi %B1,0	 			
+
+.H2:				; count while high			
+	adiw %A0,1				
+	brvs .timeoutH			
+	sbic 0x0F, 0	 		
+	rjmp .H2	 			
+
+.L2:				; count while low			
+	adiw %A1,1				
+	brvs .timeoutL			
+	sbis 0x0F, 0 			
+	rjmp .L2
+	
+ 	rjmp .end		; done measuring; exit asm block			
+	
+.timeoutH: 					
+	ldi %A0,100		; return 100% duty		
+	ldi %B0,0
+	ldi %A1,0				
+	ldi %B1,0
+	rjmp .end
+	
+.timeoutL: 					
+	ldi %A0,0		; return 0% duty		
+	ldi %B0,0
+	ldi %A1,0				
+	ldi %B1,0	
+
+.end:						
+	sei				; re-enable interrupts		
