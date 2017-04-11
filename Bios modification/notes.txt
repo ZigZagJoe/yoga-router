@@ -1,0 +1,3 @@
+"Unauthorized Wireless network card is plugged in. Power off and remove it"
+
+Section_PE32_image_11D378C2_B472_412F_AD87_1BE4CD8B33A6_UEFIL05BIOSLock_body
